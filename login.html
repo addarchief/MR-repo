@@ -18,6 +18,8 @@
       border-radius: 15px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.3);
       overflow: hidden;
+      max-width: 400px;
+      margin: 0 auto;
     }
     .login-header {
       background: var(--bs-primary);
@@ -32,10 +34,20 @@
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       border: none;
       color: white;
+      padding: 12px;
+      font-size: 1.1rem;
     }
     .btn-login:hover {
       transform: translateY(-2px);
       box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    .login-info {
+      background: var(--bs-dark);
+      color: var(--bs-light);
+      padding: 1rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      margin-top: 1rem;
     }
   </style>
 </head>
@@ -47,48 +59,31 @@
           <div class="login-header">
             <h1>📋</h1>
             <h3>Repositorio SQL</h3>
-            <p class="mb-0">Inicia sesión para continuar</p>
+            <p class="mb-0">Acceso Restringido</p>
           </div>
           
           <div class="login-form">
             <!-- Formulario Login -->
-            <div id="loginForm">
+            <form id="loginForm" onsubmit="event.preventDefault(); login();">
               <div class="mb-3">
                 <label for="email" class="form-label">Email</label>
-                <input type="email" class="form-control" id="email" placeholder="tu@email.com" required>
+                <input type="email" class="form-control" id="email" placeholder="usuario@empresa.com" required>
               </div>
               <div class="mb-3">
                 <label for="password" class="form-label">Contraseña</label>
                 <input type="password" class="form-control" id="password" placeholder="••••••••" required>
               </div>
-              <button class="btn btn-login w-100 mb-3" onclick="login()">
+              <button type="submit" class="btn btn-login w-100 mb-3">
                 🔐 Iniciar Sesión
               </button>
-              <div class="text-center">
-                <a href="#" onclick="mostrarRegistro()">¿No tienes cuenta? Regístrate</a>
-              </div>
-            </div>
+            </form>
 
-            <!-- Formulario Registro -->
-            <div id="registerForm" class="d-none">
-              <div class="mb-3">
-                <label for="regEmail" class="form-label">Email</label>
-                <input type="email" class="form-control" id="regEmail" placeholder="tu@email.com" required>
-              </div>
-              <div class="mb-3">
-                <label for="regPassword" class="form-label">Contraseña</label>
-                <input type="password" class="form-control" id="regPassword" placeholder="Mínimo 6 caracteres" required>
-              </div>
-              <div class="mb-3">
-                <label for="regConfirmPassword" class="form-label">Confirmar Contraseña</label>
-                <input type="password" class="form-control" id="regConfirmPassword" placeholder="Repite tu contraseña" required>
-              </div>
-              <button class="btn btn-login w-100 mb-3" onclick="register()">
-                📝 Crear Cuenta
-              </button>
-              <div class="text-center">
-                <a href="#" onclick="mostrarLogin()">¿Ya tienes cuenta? Inicia sesión</a>
-              </div>
+            <!-- Información de acceso -->
+            <div class="login-info">
+              <small>
+                <strong>ℹ️ Acceso Restringido</strong><br>
+                Las credenciales son proporcionadas por el administrador del sistema.
+              </small>
             </div>
 
             <!-- Mensajes -->
@@ -113,30 +108,21 @@
       }
     }
 
-    // Mostrar formulario de registro
-    function mostrarRegistro() {
-      document.getElementById('loginForm').classList.add('d-none');
-      document.getElementById('registerForm').classList.remove('d-none');
-      document.getElementById('message').classList.add('d-none');
-    }
-
-    // Mostrar formulario de login
-    function mostrarLogin() {
-      document.getElementById('registerForm').classList.add('d-none');
-      document.getElementById('loginForm').classList.remove('d-none');
-      document.getElementById('message').classList.add('d-none');
-    }
-
     // Función de login
     async function login() {
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
       const message = document.getElementById('message');
+      const button = document.querySelector('.btn-login');
 
       if (!email || !password) {
         mostrarMensaje('⚠️ Por favor, completa todos los campos', 'warning');
         return;
       }
+
+      // Mostrar loading
+      button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Verificando...';
+      button.disabled = true;
 
       try {
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -146,56 +132,18 @@
 
         if (error) throw error;
 
-        mostrarMensaje('✅ ¡Login exitoso! Redirigiendo...', 'success');
+        mostrarMensaje('✅ ¡Acceso concedido! Redirigiendo...', 'success');
+        
         setTimeout(() => {
           window.location.href = 'index.html';
         }, 1000);
 
       } catch (error) {
-        mostrarMensaje(`❌ Error: ${error.message}`, 'danger');
-      }
-    }
-
-    // Función de registro
-    async function register() {
-      const email = document.getElementById('regEmail').value;
-      const password = document.getElementById('regPassword').value;
-      const confirmPassword = document.getElementById('regConfirmPassword').value;
-      const message = document.getElementById('message');
-
-      if (!email || !password || !confirmPassword) {
-        mostrarMensaje('⚠️ Por favor, completa todos los campos', 'warning');
-        return;
-      }
-
-      if (password !== confirmPassword) {
-        mostrarMensaje('❌ Las contraseñas no coinciden', 'danger');
-        return;
-      }
-
-      if (password.length < 6) {
-        mostrarMensaje('❌ La contraseña debe tener al menos 6 caracteres', 'danger');
-        return;
-      }
-
-      try {
-        const { data, error } = await supabase.auth.signUp({
-          email: email,
-          password: password
-        });
-
-        if (error) throw error;
-
-        mostrarMensaje('✅ ¡Cuenta creada! Revisa tu email para confirmar.', 'success');
+        mostrarMensaje(`❌ Error de autenticación: ${error.message}`, 'danger');
         
-        // Volver al login después de registro exitoso
-        setTimeout(() => {
-          mostrarLogin();
-          document.getElementById('email').value = email;
-        }, 2000);
-
-      } catch (error) {
-        mostrarMensaje(`❌ Error: ${error.message}`, 'danger');
+        // Restaurar botón
+        button.innerHTML = '🔐 Iniciar Sesión';
+        button.disabled = false;
       }
     }
 
@@ -210,16 +158,15 @@
     // Verificar autenticación al cargar
     document.addEventListener('DOMContentLoaded', function() {
       checkAuth();
+      
+      // Enfocar el campo email
+      document.getElementById('email').focus();
     });
 
     // Permitir login con Enter
     document.addEventListener('keypress', function(e) {
       if (e.key === 'Enter') {
-        if (!document.getElementById('loginForm').classList.contains('d-none')) {
-          login();
-        } else {
-          register();
-        }
+        login();
       }
     });
   </script>
