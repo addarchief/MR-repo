@@ -58,11 +58,30 @@
       border-radius: 12px;
       font-size: 0.8em;
       margin-right: 5px;
+      display: inline-block;
+      margin-bottom: 2px;
+    }
+    .status-badge {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      z-index: 999;
+    }
+    .card {
+      transition: transform 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-2px);
     }
   </style>
 </head>
 <body>
   <button id="toggle-theme" class="btn btn-outline-light btn-sm">🌗 Cambiar tema</button>
+
+  <!-- Badge de estado de conexión -->
+  <div class="status-badge">
+    <span class="badge bg-success" id="status-connection">✅ Conectado</span>
+  </div>
 
   <div class="container-fluid">
     <div class="row">
@@ -88,35 +107,39 @@
 
         <!-- Sección Inicio -->
         <div id="inicio" class="seccion">
-          <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>📋 Repositorio de Consultas SQL</h2>
-            <button class="btn btn-info" onclick="probarConexion()">
-              🔧 Probar Conexión
-            </button>
+          <div class="text-center mb-4">
+            <h1>📋 Repositorio de Consultas SQL</h1>
+            <p class="lead text-muted">Guarda, busca y comparte tus consultas SQL de forma organizada y colaborativa.</p>
           </div>
-          <p class="text-muted mb-4">Guarda, busca y comparte tus consultas SQL de forma organizada y colaborativa.</p>
           
           <div class="row mb-4">
             <div class="col-md-6">
-              <div class="card">
+              <div class="card h-100">
                 <div class="card-body">
                   <h5 class="card-title">🚀 Características</h5>
-                  <ul class="list-group list-group-flush">
-                    <li class="list-group-item">🔍 Búsqueda inteligente por múltiples campos</li>
-                    <li class="list-group-item">📁 Organización por etiquetas</li>
-                    <li class="list-group-item">💾 Almacenamiento en la nube</li>
-                    <li class="list-group-item">👥 Colaboración en equipo</li>
+                  <ul class="list-unstyled">
+                    <li class="mb-2">✅ Búsqueda inteligente por múltiples campos</li>
+                    <li class="mb-2">✅ Organización por etiquetas</li>
+                    <li class="mb-2">✅ Almacenamiento en la nube</li>
+                    <li class="mb-2">✅ Colaboración en equipo</li>
                   </ul>
                 </div>
               </div>
             </div>
             <div class="col-md-6">
-              <div class="card">
-                <div class="card-body">
+              <div class="card h-100">
+                <div class="card-body text-center">
                   <h5 class="card-title">📊 Estadísticas</h5>
-                  <div id="estadisticas" class="text-center">
-                    <div class="spinner-border" role="status">
-                      <span class="visually-hidden">Cargando...</span>
+                  <div id="estadisticas">
+                    <div class="row">
+                      <div class="col-6">
+                        <h3 class="text-primary" id="total-consultas">3</h3>
+                        <p class="text-muted">Consultas guardadas</p>
+                      </div>
+                      <div class="col-6">
+                        <h3 class="text-success" id="total-etiquetas">6</h3>
+                        <p class="text-muted">Etiquetas únicas</p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -124,7 +147,7 @@
             </div>
           </div>
 
-          <div class="text-center">
+          <div class="text-center mt-4">
             <a href="#" class="btn btn-primary btn-lg" onclick="mostrarSeccion('buscar')">
               🚀 Empezar a buscar consultas
             </a>
@@ -304,27 +327,6 @@
       }
     }
 
-    // Función para probar conexión
-    async function probarConexion() {
-      mostrarMensajeGlobal('🔄 Probando conexión con Supabase...', 'info');
-      
-      try {
-        const { data, error } = await supabase
-          .from('consultas')
-          .select('*')
-          .limit(1);
-
-        if (error) {
-          mostrarMensajeGlobal(`❌ Error de conexión: ${error.message}`, 'danger');
-          return;
-        }
-
-        mostrarMensajeGlobal('✅ ¡Conexión exitosa con Supabase!', 'success');
-      } catch (err) {
-        mostrarMensajeGlobal(`❌ Error: ${err.message}`, 'danger');
-      }
-    }
-
     // Función para cargar estadísticas
     async function cargarEstadisticas() {
       try {
@@ -342,16 +344,10 @@
           }
         });
 
-        document.getElementById('estadisticas').innerHTML = `
-          <h3 class="text-primary">${total}</h3>
-          <p class="text-muted">Consultas guardadas</p>
-          <h4 class="text-success">${etiquetasUnicas.size}</h4>
-          <p class="text-muted">Etiquetas únicas</p>
-        `;
+        document.getElementById('total-consultas').textContent = total;
+        document.getElementById('total-etiquetas').textContent = etiquetasUnicas.size;
       } catch (error) {
-        document.getElementById('estadisticas').innerHTML = `
-          <p class="text-danger">Error al cargar estadísticas</p>
-        `;
+        console.error('Error al cargar estadísticas:', error);
       }
     }
 
@@ -558,7 +554,29 @@
     document.addEventListener('DOMContentLoaded', function() {
       mostrarSeccion('inicio');
       cargarEstadisticas();
+      
+      // Verificar conexión al cargar
+      verificarConexion();
     });
+
+    // Función para verificar conexión (sin botón visible)
+    async function verificarConexion() {
+      try {
+        const { data, error } = await supabase
+          .from('consultas')
+          .select('*')
+          .limit(1);
+
+        if (error) throw error;
+
+        // Actualizar badge de estado
+        document.getElementById('status-connection').className = 'badge bg-success';
+        document.getElementById('status-connection').textContent = '✅ Conectado';
+      } catch (error) {
+        document.getElementById('status-connection').className = 'badge bg-danger';
+        document.getElementById('status-connection').textContent = '❌ Sin conexión';
+      }
+    }
   </script>
 </body>
 </html>
