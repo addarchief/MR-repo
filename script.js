@@ -434,4 +434,15 @@ async function verificarConexion() {
     document.getElementById('status-connection').textContent = '❌ Sin conexión';
   }
 }
-
+// Función de logout
+async function logout() {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      window.location.href = 'login.html';
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+      mostrarMensajeGlobal('❌ Error al cerrar sesión', 'danger');
+    }
+  }
