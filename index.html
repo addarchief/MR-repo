@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Repositorio de Consultas SQL</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body { 
+      overflow-x: hidden; 
+      background-color: var(--bs-body-bg);
+      color: var(--bs-body-color);
+    }
+    .sidebar { 
+      min-height: 100vh; 
+      border-right: 1px solid var(--bs-border-color);
+      background-color: var(--bs-body-tertiary);
+    }
+    .sidebar .list-group-item.active { 
+      background-color: var(--bs-primary); 
+      color: white; 
+      border-color: var(--bs-primary); 
+    }
+    pre { 
+      white-space: pre-wrap; 
+      word-break: break-word; 
+      background: var(--bs-dark); 
+      padding: 10px; 
+      border-radius: 5px;
+      color: var(--bs-light);
+    }
+    .sql-code { 
+      font-family: 'Courier New', monospace; 
+      margin: 0;
+    }
+    #toggle-theme { 
+      position: fixed; 
+      top: 10px; 
+      right: 10px; 
+      z-index: 999; 
+    }
+    .seccion {
+      animation: fadeIn 0.3s ease-in;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .table-responsive {
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .tag {
+      background: var(--bs-primary);
+      color: white;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.8em;
+      margin-right: 5px;
+    }
+  </style>
+</head>
+<body>
+  <button id="toggle-theme" class="btn btn-outline-light btn-sm">🌗 Cambiar tema</button>
+
+  <div class="container-fluid">
+    <div class="row">
+      <!-- Sidebar -->
+      <div class="col-md-3 col-lg-2 sidebar p-0">
+        <div class="d-flex flex-column align-items-stretch flex-shrink-0">
+          <div class="p-3 border-bottom">
+            <span class="fs-5 fw-semibold">📁 Navegación</span>
+          </div>
+          <div class="list-group list-group-flush">
+            <a href="#" class="list-group-item list-group-item-action active" onclick="mostrarSeccion('inicio')">🏠 Inicio</a>
+            <a href="#" class="list-group-item list-group-item-action" onclick="mostrarSeccion('buscar')">🔍 Buscar consultas</a>
+            <a href="#" class="list-group-item list-group-item-action" onclick="mostrarSeccion('nueva')">➕ Agregar nueva</a>
+            <a href="#" class="list-group-item list-group-item-action" onclick="mostrarSeccion('exportar')">📤 Exportar</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contenido principal -->
+      <main class="col-md-9 col-lg-10 py-4">
+        <!-- Mensajes globales -->
+        <div id="mensaje-global" class="alert d-none mb-3"></div>
+
+        <!-- Sección Inicio -->
+        <div id="inicio" class="seccion">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>📋 Repositorio de Consultas SQL</h2>
+            <button class="btn btn-info" onclick="probarConexion()">
+              🔧 Probar Conexión
+            </button>
+          </div>
+          <p class="text-muted mb-4">Guarda, busca y comparte tus consultas SQL de forma organizada y colaborativa.</p>
+          
+          <div class="row mb-4">
+            <div class="col-md-6">
+              <div class="card">
+                <div class="card-body">
+                  <h5 class="card-title">🚀 Características</h5>
+                  <ul class="list-group list-group-flush">
+                    <li class="list-group-item">🔍 Búsqueda inteligente por múltiples campos</li>
+                    <li class="list-group-item">📁 Organización por etiquetas</li>
+                    <li class="list-group-item">💾 Almacenamiento en la nube</li>
+                    <li class="list-group-item">👥 Colaboración en equipo</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card">
+                <div class="card-body">
+                  <h5 class="card-title">📊 Estadísticas</h5>
+                  <div id="estadisticas" class="text-center">
+                    <div class="spinner-border" role="status">
+                      <span class="visually-hidden">Cargando...</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="text-center">
+            <a href="#" class="btn btn-primary btn-lg" onclick="mostrarSeccion('buscar')">
+              🚀 Empezar a buscar consultas
+            </a>
+          </div>
+        </div>
+
+        <!-- Sección Buscar -->
+        <div id="buscar" class="seccion d-none">
+          <h2 class="mb-4">🔍 Buscar consultas</h2>
+          
+          <div class="row mb-4">
+            <div class="col-md-8">
+              <div class="input-group">
+                <input type="text" id="busqueda" class="form-control form-control-lg" 
+                       placeholder="Buscar por título, descripción o etiquetas..." 
+                       onkeypress="if(event.key === 'Enter') buscarConsultas()" />
+                <button class="btn btn-primary" onclick="buscarConsultas()">
+                  🔍 Buscar
+                </button>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <button class="btn btn-outline-secondary w-100 h-100" onclick="cargarTodasConsultas()">
+                📋 Ver todas
+              </button>
+            </div>
+          </div>
+
+          <div id="mensaje-resultados" class="alert d-none mb-3"></div>
+
+          <div class="table-responsive">
+            <table class="table table-striped table-bordered table-hover">
+              <thead class="table-dark">
+                <tr>
+                  <th width="20%">Título</th>
+                  <th width="25%">Descripción</th>
+                  <th width="15%">Etiquetas</th>
+                  <th width="40%">Consulta SQL</th>
+                </tr>
+              </thead>
+              <tbody id="tabla-consultas">
+                <tr>
+                  <td colspan="4" class="text-center text-muted py-4">
+                    👆 Ingresa un término de búsqueda o haz clic en "Ver todas"
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Sección Nueva Consulta -->
+        <div id="nueva" class="seccion d-none">
+          <h2 class="mb-4">➕ Agregar nueva consulta</h2>
+          
+          <div class="row">
+            <div class="col-md-8">
+              <form id="form-nueva-consulta">
+                <div class="mb-3">
+                  <label for="titulo" class="form-label">Título *</label>
+                  <input type="text" class="form-control" id="titulo" required 
+                         placeholder="Ej: Usuarios activos del último mes">
+                </div>
+                
+                <div class="mb-3">
+                  <label for="descripcion" class="form-label">Descripción</label>
+                  <textarea class="form-control" id="descripcion" rows="3" 
+                            placeholder="Describe para qué sirve esta consulta..."></textarea>
+                </div>
+                
+                <div class="mb-3">
+                  <label for="sql" class="form-label">Consulta SQL *</label>
+                  <textarea class="form-control font-monospace" id="sql" rows="6" required 
+                            placeholder="SELECT * FROM tabla WHERE condición..."></textarea>
+                </div>
+                
+                <div class="mb-3">
+                  <label for="etiquetas" class="form-label">Etiquetas</label>
+                  <input type="text" class="form-control" id="etiquetas" 
+                         placeholder="usuarios,activos,reporte (separadas por comas)">
+                  <div class="form-text">Separa las etiquetas con comas</div>
+                </div>
+                
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                  <button type="button" class="btn btn-secondary" onclick="limpiarFormulario()">
+                    🗑️ Limpiar
+                  </button>
+                  <button type="submit" class="btn btn-success">
+                    💾 Guardar Consulta
+                  </button>
+                </div>
+              </form>
+            </div>
+            
+            <div class="col-md-4">
+              <div class="card">
+                <div class="card-header">
+                  💡 Consejos
+                </div>
+                <div class="card-body">
+                  <ul class="list-unstyled">
+                    <li class="mb-2">✅ Usa títulos descriptivos</li>
+                    <li class="mb-2">📝 Explica el propósito en la descripción</li>
+                    <li class="mb-2">🏷️ Agrega etiquetas relevantes</li>
+                    <li class="mb-2">🔍 Testea tu consulta antes de guardar</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sección Exportar -->
+        <div id="exportar" class="seccion d-none">
+          <h2 class="mb-4">📤 Exportar consultas</h2>
+          
+          <div class="row">
+            <div class="col-md-6">
+              <div class="card">
+                <div class="card-body">
+                  <h5 class="card-title">📄 Exportar a JSON</h5>
+                  <p class="card-text">Exporta todas las consultas en formato JSON para backup o migración.</p>
+                  <button class="btn btn-primary" onclick="exportarJSON()">
+                    📥 Descargar JSON
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <div class="col-md-6">
+              <div class="card">
+                <div class="card-body">
+                  <h5 class="card-title">📊 Exportar a CSV</h5>
+                  <p class="card-text">Genera un archivo CSV compatible con Excel y otras herramientas.</p>
+                  <button class="btn btn-success" onclick="exportarCSV()">
+                    📥 Descargar CSV
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="mt-4">
+            <div class="card">
+              <div class="card-header">
+                🔄 Próximamente
+              </div>
+              <div class="card-body">
+                <ul class="list-unstyled">
+                  <li>📧 Exportar por email</li>
+                  <li>🔗 Compartir enlace público</li>
+                  <li>📋 Copiar al portapapeles</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    // Configuración de Supabase
+    const SUPABASE_URL = 'https://lbkakkgojpczcjcvevpp.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxia2Fra2dvanBjemNqY3ZldnBwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE4MDIwNzksImV4cCI6MjA3NzM3ODA3OX0.84fn2r02HUn4zkHTKZiDo3HF0lX210xQChFbPpyJElY';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // Funciones de navegación
+    function mostrarSeccion(id) {
+      document.querySelectorAll('.seccion').forEach(s => s.classList.add('d-none'));
+      document.getElementById(id).classList.remove('d-none');
+      document.querySelectorAll('.list-group-item').forEach(l => l.classList.remove('active'));
+      document.querySelector(`.list-group-item[onclick*="${id}"]`).classList.add('active');
+      
+      if (id === 'inicio') {
+        cargarEstadisticas();
+      }
+    }
+
+    // Función para probar conexión
+    async function probarConexion() {
+      mostrarMensajeGlobal('🔄 Probando conexión con Supabase...', 'info');
+      
+      try {
+        const { data, error } = await supabase
+          .from('consultas')
+          .select('*')
+          .limit(1);
+
+        if (error) {
+          mostrarMensajeGlobal(`❌ Error de conexión: ${error.message}`, 'danger');
+          return;
+        }
+
+        mostrarMensajeGlobal('✅ ¡Conexión exitosa con Supabase!', 'success');
+      } catch (err) {
+        mostrarMensajeGlobal(`❌ Error: ${err.message}`, 'danger');
+      }
+    }
+
+    // Función para cargar estadísticas
+    async function cargarEstadisticas() {
+      try {
+        const { data, error } = await supabase
+          .from('consultas')
+          .select('*');
+
+        if (error) throw error;
+
+        const total = data.length;
+        const etiquetasUnicas = new Set();
+        data.forEach(c => {
+          if (c.etiquetas) {
+            c.etiquetas.split(',').forEach(tag => etiquetasUnicas.add(tag.trim()));
+          }
+        });
+
+        document.getElementById('estadisticas').innerHTML = `
+          <h3 class="text-primary">${total}</h3>
+          <p class="text-muted">Consultas guardadas</p>
+          <h4 class="text-success">${etiquetasUnicas.size}</h4>
+          <p class="text-muted">Etiquetas únicas</p>
+        `;
+      } catch (error) {
+        document.getElementById('estadisticas').innerHTML = `
+          <p class="text-danger">Error al cargar estadísticas</p>
+        `;
+      }
+    }
+
+    // Función para buscar consultas
+    async function buscarConsultas() {
+      const palabra = document.getElementById('busqueda').value.trim();
+      const tabla = document.getElementById('tabla-consultas');
+      
+      if (!palabra) {
+        mostrarMensajeResultados('⚠️ Por favor, ingresa un término de búsqueda', 'warning');
+        return;
+      }
+
+      tabla.innerHTML = '<tr><td colspan="4" class="text-center py-4"><div class="spinner-border" role="status"></div> Buscando...</td></tr>';
+
+      try {
+        const { data, error } = await supabase
+          .from('consultas')
+          .select('*')
+          .or(`titulo.ilike.%${palabra}%,descripcion.ilike.%${palabra}%,etiquetas.ilike.%${palabra}%`)
+          .order('creado_en', { ascending: false });
+
+        if (error) throw error;
+
+        mostrarResultados(data, `para "${palabra}"`);
+      } catch (error) {
+        tabla.innerHTML = `<tr><td colspan="4" class="text-center text-danger py-4">Error: ${error.message}</td></tr>`;
+      }
+    }
+
+    // Función para cargar todas las consultas
+    async function cargarTodasConsultas() {
+      const tabla = document.getElementById('tabla-consultas');
+      tabla.innerHTML = '<tr><td colspan="4" class="text-center py-4"><div class="spinner-border" role="status"></div> Cargando todas las consultas...</td></tr>';
+
+      try {
+        const { data, error } = await supabase
+          .from('consultas')
+          .select('*')
+          .order('creado_en', { ascending: false });
+
+        if (error) throw error;
+
+        mostrarResultados(data, 'todas las consultas');
+      } catch (error) {
+        tabla.innerHTML = `<tr><td colspan="4" class="text-center text-danger py-4">Error: ${error.message}</td></tr>`;
+      }
+    }
+
+    // Función para mostrar resultados
+    function mostrarResultados(data, contexto) {
+      const tabla = document.getElementById('tabla-consultas');
+      
+      if (data.length === 0) {
+        tabla.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-4">No se encontraron resultados ${contexto}</td></tr>`;
+        mostrarMensajeResultados(`🔍 No se encontraron resultados ${contexto}`, 'warning');
+        return;
+      }
+
+      tabla.innerHTML = '';
+      data.forEach(c => {
+        const etiquetasHTML = c.etiquetas ? 
+          c.etiquetas.split(',').map(tag => 
+            `<span class="tag">${tag.trim()}</span>`
+          ).join('') : '';
+        
+        tabla.innerHTML += `
+          <tr>
+            <td><strong>${c.titulo}</strong></td>
+            <td>${c.descripcion || '<span class="text-muted">Sin descripción</span>'}</td>
+            <td>${etiquetasHTML || '<span class="text-muted">Sin etiquetas</span>'}</td>
+            <td><pre class="sql-code">${c.sql}</pre></td>
+          </tr>`;
+      });
+
+      mostrarMensajeResultados(`✅ Se encontraron ${data.length} resultado(s) ${contexto}`, 'success');
+    }
+
+    // Funciones para agregar nueva consulta
+    document.getElementById('form-nueva-consulta').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const titulo = document.getElementById('titulo').value.trim();
+      const descripcion = document.getElementById('descripcion').value.trim();
+      const sql = document.getElementById('sql').value.trim();
+      const etiquetas = document.getElementById('etiquetas').value.trim();
+
+      if (!titulo || !sql) {
+        mostrarMensajeGlobal('⚠️ El título y la consulta SQL son obligatorios', 'warning');
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('consultas')
+          .insert([
+            {
+              titulo: titulo,
+              descripcion: descripcion,
+              sql: sql,
+              etiquetas: etiquetas
+            }
+          ])
+          .select();
+
+        if (error) throw error;
+
+        mostrarMensajeGlobal('✅ Consulta guardada exitosamente', 'success');
+        limpiarFormulario();
+        cargarEstadisticas();
+      } catch (error) {
+        mostrarMensajeGlobal(`❌ Error al guardar: ${error.message}`, 'danger');
+      }
+    });
+
+    function limpiarFormulario() {
+      document.getElementById('form-nueva-consulta').reset();
+    }
+
+    // Funciones de exportación
+    async function exportarJSON() {
+      try {
+        const { data, error } = await supabase
+          .from('consultas')
+          .select('*')
+          .order('creado_en', { ascending: false });
+
+        if (error) throw error;
+
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'consultas-sql.json';
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        mostrarMensajeGlobal('✅ Archivo JSON descargado', 'success');
+      } catch (error) {
+        mostrarMensajeGlobal(`❌ Error al exportar: ${error.message}`, 'danger');
+      }
+    }
+
+    async function exportarCSV() {
+      try {
+        const { data, error } = await supabase
+          .from('consultas')
+          .select('*')
+          .order('creado_en', { ascending: false });
+
+        if (error) throw error;
+
+        const headers = ['Título', 'Descripción', 'SQL', 'Etiquetas', 'Fecha Creación'];
+        const csvData = data.map(row => [
+          `"${row.titulo.replace(/"/g, '""')}"`,
+          `"${(row.descripcion || '').replace(/"/g, '""')}"`,
+          `"${row.sql.replace(/"/g, '""')}"`,
+          `"${(row.etiquetas || '').replace(/"/g, '""')}"`,
+          `"${new Date(row.creado_en).toLocaleDateString()}"`
+        ].join(','));
+
+        const csv = [headers.join(','), ...csvData].join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'consultas-sql.csv';
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        mostrarMensajeGlobal('✅ Archivo CSV descargado', 'success');
+      } catch (error) {
+        mostrarMensajeGlobal(`❌ Error al exportar: ${error.message}`, 'danger');
+      }
+    }
+
+    // Funciones auxiliares para mensajes
+    function mostrarMensajeGlobal(texto, tipo) {
+      const mensaje = document.getElementById('mensaje-global');
+      mensaje.innerHTML = texto;
+      mensaje.className = `alert alert-${tipo}`;
+      mensaje.classList.remove('d-none');
+      setTimeout(() => mensaje.classList.add('d-none'), 5000);
+    }
+
+    function mostrarMensajeResultados(texto, tipo) {
+      const mensaje = document.getElementById('mensaje-resultados');
+      mensaje.innerHTML = texto;
+      mensaje.className = `alert alert-${tipo}`;
+      mensaje.classList.remove('d-none');
+    }
+
+    // Toggle tema
+    document.getElementById('toggle-theme').addEventListener('click', () => {
+      const html = document.documentElement;
+      const actual = html.getAttribute('data-bs-theme');
+      const nuevoTema = actual === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-bs-theme', nuevoTema);
+      document.getElementById('toggle-theme').textContent = 
+        nuevoTema === 'dark' ? '🌗 Cambiar tema' : '🌗 Cambiar tema';
+    });
+
+    // Inicialización
+    document.addEventListener('DOMContentLoaded', function() {
+      mostrarSeccion('inicio');
+      cargarEstadisticas();
+    });
+  </script>
+</body>
+</html> // hola mundo 2
