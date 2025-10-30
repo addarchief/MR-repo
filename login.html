@@ -55,9 +55,24 @@
         padding: 2rem;
         text-align: center;
     }
+    .mensaje-top {
+    position: fixed;
+    top: 20px; /* distancia desde el borde superior */
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1050;
+    padding: 1rem 2rem;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    transition: opacity 0.3s ease;
+    }
   </style>
 </head>
 <body>
+    <!-- Mensaje flotante centrado arriba -->
+<div id="message" class="alert alert-info d-none mensaje-top">
+    ¡Acción completada con éxito!
+  </div>  
+  
   <div class="container">
     <div class="row justify-content-center">
       <div class="col-md-6 col-lg-4">
@@ -66,8 +81,6 @@
             <h1>📋</h1>
             <h3>Repositorio SQL</h3>
           </div>
-          <!-- Mensajes -->
-          <div id="message" class="alert d-none mt-3"></div>
           <div class="login-form">
             <!-- Formulario Login -->
             <form id="loginForm" onsubmit="event.preventDefault(); login();">
@@ -156,8 +169,13 @@
     function mostrarMensaje(texto, tipo) {
       const message = document.getElementById('message');
       message.innerHTML = texto;
-      message.className = `alert alert-${tipo}`;
+      message.className = `alert alert-${tipo} mensaje-top`;
       message.classList.remove('d-none');
+      
+      // Ocultar después de 3 segundos
+      setTimeout(() => {
+        message.classList.add('d-none');
+      }, 3000);
     }
 
     // Verificar autenticación al cargar
