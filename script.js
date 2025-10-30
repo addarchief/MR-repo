@@ -446,3 +446,15 @@ async function logout() {
       mostrarMensajeGlobal('❌ Error al cerrar sesión', 'danger');
     }
   }
+  function mostrarMensaje(texto, tipo = 'info') {
+    const mensaje = document.getElementById('message');
+    mensaje.textContent = texto;
+    mensaje.className = `alert alert-${tipo} mensaje-top`;
+    mensaje.classList.remove('d-none');
+  
+    // Ocultar después de 2 segundos
+    setTimeout(() => {
+      mensaje.classList.add('d-none');
+    }, 2000);
+  }
+  
